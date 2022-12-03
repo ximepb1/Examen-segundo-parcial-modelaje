@@ -1,0 +1,489 @@
+---
+title: "Modelaje de Enfermedades Infecciosas"
+author: "Segundo Examen Parcial"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    toc: true
+    number_sections: true
+    toc_float: true
+    fig_height: 3
+    fig_width: 5
+  pdf_document:
+    fig_height: 3
+    fig_width: 5
+  word_document:
+    fig_height: 3
+    fig_width: 5
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Selección
+
+Considera dos poblaciones $x(t)$ y $y(t)$
+
+1.  Si las pobalciones no interactuan las ecuaciones que gobierna al
+    sistema son: $$\dot x(t)=ax$$ $$\dot y(t)=by$$
+
+con $a,b >0$ Demuestra que la soluciones son
+
+$$ x(t)=x_0e^{at}$$
+
+$$y(t)=y_0e^{bt}$$ con $x_0$ y $y_0$ las poblaciones iniciales.
+
+2.  Construye la siguiente varible $\rho(t)$
+
+$$\rho(t)= \frac{x(t)}{y(t)}$$ $$\rho(t)= \frac{ax(t)}{by(t)}$$
+Demuestra que esa la derivada de esa ecuación se puede poner como:
+
+$$\dot \rho= (a-b)\rho$$ $$\rho(t)= \frac{(a)(by)-(b)(ax)}{by^2}$$
+Sugerencia: utiliza la regla de la derivada de un cociente.
+
+3.  Demuestra que la solcuión de la ecuación anterior es:
+
+$$\rho(t) =\rho_0e^{(a-b)*t}$$
+
+4.  A partir de esta solución demuestra que:
+
+-   Si $a>b$ entonces $\rho(t)$ tiende a infinito y por lo tanto la
+    población x elimina a la población y.Es decir x se selecciona sobre
+    y
+-   Si $a<b$ entonces $\rho(t)$ tiende a cero y por lo tanto la
+    población y elimina a la población x.Es decir y se selecciona sobre
+    x.  
+
+# Estadio asintomático
+
+Las siguientes ecuaciones describen un modelo por compartimentos de una
+enfermedad infecciosa con un estadio asintomático.
+$$\dot S = \nu -\beta S(I +qA)-\mu S$$
+$$\dot E= \beta S(I+qA) -(\eta+\mu)E $$
+$$\dot I = p\eta E -(\alpha +\mu)I$$
+$$\dot A= (1-p)\eta E -(\gamma +\mu)A$$
+$$\dot R=\alpha I +\gamma A-\mu R$$
+
+1.  Dibuja el esquema por compartimentos que representa este conjunto de
+    ecuaciones
+
+    ![](images/SEAIR.jpeg)
+
+2.  Explica el significado de cada ecuación: es decir, explica el
+    significado de cada término y cada parámetro. ¿Existen parámetros
+    que están acotados?, si es así indica el intervalo en donde pueden
+    variar.
+
+$$\dot S=Población \ susceptible$$ $$\dot E=Población \ expuesta$$
+$$\dot I=Población \ de \ infectados$$
+$$\dot A=Población \ de \ asintomáticos$$
+$$\dot    R=Población \ de \ recuperados$$
+$$\nu = tasa \ de \ nacimientos$$
+$$\beta= tasa\ de \ transmisión \ de \ infectados$$
+$$q= tasa \ de \ transmisión \ de \ asintomáticos$$
+$$\mu = tasa \ de \ mortalidad$$ $$\eta = carga \ viral$$
+$$\alpha = tasa \ de \ recuperación \ de \ infeccioso \ sintomático$$
+$$\gamma = tasa \ de \ recuperación \ de \ infeccioso \ asintomático$$
+Sí, la carga viral que determina si eres sintomático o asintomático,
+porque:
+
+$$\eta = (1-p) $$
+
+dónde: $$p= fracción \ de \ población \ que \ es \ sintomática$$
+
+y:
+
+$$ (1-p) = fracción \ de \ la población \ que \ es \  asintomática$$
+
+por lo que los paramétro van de:
+
+$$0-1$$
+
+3. ¿Bajo qué condiciones la población se conservaría?
+
+Se conservaría sólo sí:
+
+$$ \nu = \mu $$ 4. Encuentra, si existe, el punto de equilibrio
+*free-disease*\
+
+```{r}
+library(deSolve)
+```
+
+```{r}
+
+SEIAR <- function (tiempo, compartimentos, parametros) {
+  with (as.list (c (compartimentos, parametros)), {
+    dS <- nu - beta*S*(I+(q*A)) - mu*S
+    dE <- beta*S*(I+(q*A)) - mu*E - eta*E
+    dI <- p*eta*E - alfa*I - mu*I
+    dA <- (1-p)*eta*E - gama*A - mu*A
+    dR <- gama*A + alfa*I - mu*R
+    list (c (dS, dE, dI, dA, dR))
+  })
+}
+
+parametros <- c (beta = 6, gama = 8, eta = 0.6, mu = 0.005,
+         nu = 0.005, p = 0.64, q = 0.26, alfa = 8)
+compartimentos <- c (S = 13.5^100, E = 0, I = 65, A = 12, R = 0)
+tiempo <- seq (from = 1, to = 3, by = 0.01)
+
+outSEIAR <- ode (compartimentos, tiempo, SEIAR, parametros)
+
+matplot (outSEIAR [ , 1], outSEIAR [ , 2:6], type = "l",
+         xlab = "Tiempo", ylab = "Población",
+         main = "Modelo SEIAR", lwd = 2)
+legend ("topright", c ("Susceptibles", "Expuestos", "Infectados", "Asintomáticos", "Recuperados"), col = 1:5, lty = 1:5, cex = 0.5)
+```
+
+El punto de equilibrio depende de que beta sea menor que gamma, ya que
+mientras las personas se recuperen más rápido que de lo que se infectan
+llegará al free-disease
+
+5.  ¿Qué tipo de enfermedad puede estar describiendo? Justifica tu
+    respuesta.
+
+HPV, ya que muchos de los infectados son asintomáticos y pueden seguir
+transmitiendo la enfermedad.
+
+6.  Selecciona un conjunto de parámetros adecuados y resuelve
+    numéricamente el sistema de ecuaciones diferenciales. Asegurate que
+    tu solución alcance un punto de equilibrio. Discute tu resultado.
+
+# Estadio crónico
+
+Las siguientes ecuaciones describen un modelo por compartimentos de una
+enfermedad infecciosa con un estadio crónico.
+$$\dot S = \nu -\beta S(I +qC)-\mu S +\rho R$$
+$$\dot C= \beta S(I+qC) -(\eta+\gamma +\mu)C $$
+$$\dot I = \eta C -(\alpha +\mu)I$$
+$$\dot R= \alpha I +\gamma C -(\mu +\rho)R$$
+
+1.  Dibuja el esquema por compartimentos que representa este conjunto de
+    ecuaciones
+
+    ![](images/SCIR.jpeg)
+
+2.  Explica el significado de cada ecuación: es decir, explica el
+    significado de cada término y cada parámetro. ¿Existen parámetros
+    que están acotados, si es así indica el intervalo en donde pueden
+    variar? $$\dot S=Población \ susceptible$$
+    $$\dot C =Población \ con \ infección \ crónica $$
+    $$\dot I=Población \ de \ infectados$$
+    $$\dot A=Población \ de \ asintómaticos$$
+    $$\dot    R=Población \ de \ recuperados$$
+    $$\nu = tasa \ de \ nacimientos$$
+    $$\beta= tasa\ de \ transmisión \ de \ infectados$$
+    $$q= tasa \ de \ transmisión \ de \ crónicos$$
+    $$\mu = tasa \ de \ mortalidad$$ $$\rho =tasa \ de \ recuperación$$
+
+$$\gamma = tasa \ de \ recuperación \ de \ crónicos $$
+$$\eta = tasa \ de \ crónicos \ a \ infectados $$
+
+3.  ¿Bajo qué condiciones la población se conservaría?
+
+Se conservaría sólo sí:
+
+$$ \nu = \mu $$
+
+4.  Encuentra, si existe, el punto de equilibrio *free-disease*\
+
+El punto de equilibrio depende de que beta sea menor que gamma, ya que
+mientras las personas se recuperen más rápido que de lo que se infectan
+llegará al free-disease
+
+5.  ¿Qué tipo de enfermedad puede estar describiendo? Justifica tu
+    respuesta.
+
+Tofoides, porque es una infección crónica, que vuelve a aumentar la
+carga viral cuando hay una baja en el sistema inmune. Dónde puedes
+recuperar del estado de carga viral alto.
+
+6.  Selecciona un conjunto de parámetros adecuados y resuelve
+    numéricamente el sistema de ecuaciones diferenciales. Asegurate que
+    tu solución alcance un punto de equilibrio.Discute tu resultado.
+
+    ```{r}
+    library(deSolve)
+    ```
+
+```{r}
+
+SCIR <- function (tiempo, compartimentos, parametros) {
+  with (as.list (c (compartimentos, parametros)), {
+    dS <- nu - beta*S*(I+(q*C)) - mu*S + rho*R
+    dC <- beta*S*(I+(q*C)) - (eta+gama+mu)*C
+    dI <- eta*C - (alfa+mu)*I
+    dR <- alfa*I + gama*C - (mu+rho)*R
+    list (c (dS, dC, dI, dR))
+  })
+}
+
+parametros <- c (beta = 6, gama = 8, eta = 0.6, mu = 0.005,
+         nu = 0.005, rho = 0.64, q = 0.26, alfa = 8)
+compartimentos <- c (S = 13.5^100, C = 0, I = 65, R = 0)
+tiempo <- seq (from = 1, to = 2, by = 0.001)
+
+outSEIAR <- ode (compartimentos, tiempo, SCIR, parametros)
+
+matplot (outSEIAR [ , 1], outSEIAR [ , 2:5], type = "l",
+         xlab = "Tiempo", ylab = "Población",
+         main = "Modelo SCIR", lwd = 2)
+legend ("topright", c ("Susceptibles", "Crónicos", "Infectados", "Recuperados"), col = 1:5, lty = 1:5, cex = 0.5)
+```
+
+La población de infectados aumenta muy poco, pero llega a 0 en poco
+tiempo, mientras que la de los crónicos tiene un despunte alto pero baja
+y mantiene una población estable d crónicos, ya que no sé recuperan
+totalmente de la enfermedad.
+
+# Estadio de inmunidad pasiva
+
+La inmunidad pasiva consiste en la transferencia de inmunidad activa en
+la forma de anticuerpos de un individuo a otro.La inmunidad pasiva puede
+suceder de forma natural, por ejemplo, por la vía materna al feto a
+través de la placenta o al bebé vía la leche materna. El estadio de
+inmunidad pasiva se denota por la variable $M(t)$ y se añade al sistema
+antes de que los individuops sean suceptibles. El siguiente modelo
+**MSIR** se describe con las siguientes ecuaciones diferenciales.
+
+$$\dot M = \nu -\rho M- \mu M$$ $$\dot S= \rho M -\beta SI-\mu S $$
+$$\dot I = \beta SI -(\alpha +\mu)I$$ $$\dot R= \alpha I -\mu R$$
+
+1.  ¿Bajo qué condiciones se puede inducir de forma artificial la
+    inmunidad pasiva?
+
+    Si se tiene una cantidad suficiente de anticuerpos para producir la
+    inmunidad y asegurar una larga duración.
+
+2.  Dibuja el esquema por compartimentos que representa este conjunto de
+    ecuaciones
+
+    ![](images/MSIR.jpeg)
+
+3.  Explica el significado de cada ecuación: es decir, explica el
+    significado de cada término y cada parámetro. ¿Existen parámetros
+    que están acotados, si es así indica el intervalo en donde pueden
+    variar?
+
+$$\dot M =Población \ con \ inmunidad \ pasiva $$
+$$\dot S=Población \ susceptible$$
+
+$$\dot I=Población \ de \ infectados$$
+$$\dot    R=Población \ de \ recuperados$$
+$$\nu = tasa \ de \ nacimientos$$ $$\beta= tasa\ de \ transmisión $$
+$$\rho = tasa \ de \ perdida \ de \ inmunidad$$
+$$\mu = tasa \ de \ mortalidad$$ $$\alpha =tasa \ de \ recuperación$$
+
+4.  ¿Bajo qué condiciones la población se conservaría?
+
+Se conservaría sólo sí:
+
+$$ \nu = \mu $$
+
+5.  Encuentra, si existe, el punto de equilibrio *free-disease*\
+
+El punto de equilibrio depende de que beta sea menor que alfa, ya que
+mientras las personas se recuperen más rápido que de lo que se infectan
+llegará al free-disease
+
+6.  ¿Qué tipo de enfermedad puede estar describiendo? Justifica tu
+    respuesta.
+
+Puede ser cualquier tipo de enfermedad dónde los anticuerpos sean
+transmitidos por medio de la leche materna. Así como el efecto de
+inmunidad de algunas vacunas, por ejemplo, las de sars. Dónde se
+vacunaba a la madre y esta protección se transmitio al niño por esta
+vía.
+
+7.  Selecciona un conjunto de parámetros adecuados y resuelve
+    numéricamente el sistema de ecuaciones diferenciales. Asegurate que
+    tu solución alcance un punto de equilibrio.Discute tu resultado.
+
+    ```{r}
+
+    MSIR <- function (tiempo, compartimentos, parametros) {
+      with (as.list (c (compartimentos, parametros)), {
+    dM <- nu -  rho*M - mu*M
+    dS <- rho*M - beta*S*I - mu*S
+    dI <- beta*S*I - (alfa+mu)*I
+    dR <- alfa*I - mu*R
+    list (c (dM, dS, dI, dR))
+      })
+    }
+
+    parametros <- c (beta = 6, rho = 8, alfa = 0.6, mu = 0.005, nu = 0.005)
+    compartimentos <- c (S = 0, M = 13.5^100, I = 65, R = 0)
+    tiempo <- seq (from = 1, to = 2, by = 0.001)
+
+    outSEIAR <- ode (compartimentos, tiempo, MSIR, parametros)
+
+    matplot (outSEIAR [ , 1], outSEIAR [ , 2:4], type = "l",
+         xlab = "Tiempo", ylab = "Población",
+         main = "Modelo MSIR", lwd = 2)
+    legend ("topright", c ("Inmunes", "Suscpetibles", "Infectados", "Recuperados"), col = 1:4, lty = 1:4, cex = 0.5)
+    ```
+
+    Podemos observar que aunque mucha de la población tenga la inmunidad
+    temporal a lo largo del tiempo, van a perderla y pasar a ser
+    población susceptible \# Tratamiento
+
+Considera el sigueinte conjunto de ecuaciones diferenciales que
+describen una enfermedad infecciosa con individuos en tratamiento
+$T(t)$.
+
+$$\dot S = \nu -\beta_1 \frac{SI}{N}- \mu S$$
+$$\dot E= \beta_1\frac{SI}{N} + \beta_2 \frac{TI}{N}-(\mu +\kappa +r_1)E +pr_2I $$
+$$\dot I = \kappa E-(r_2+\mu)I $$
+$$\dot T = r_1E +qr_2I -\beta_2\frac{TI}{N}-\mu T$$
+
+con $N(t)=S(t)+E(t)+I(t)+T(t)$
+
+1.  Dibuja el esquema por compartimentos que representa este conjunto de
+    ecuaciones
+
+    ![](images/STEI.jpeg)
+
+2.  Explica el significado de cada ecuación: es decir, explica el
+    significado de cada término y cada parámetro. ¿Existen parámetros
+    que están acotados, si es así indica el intervalo en donde pueden
+    variar?
+
+$$\dot S=Población \ susceptible$$
+$$\dot T =Población \ con \ tratamiento$$
+$$\dot I=Población \ de \ infectados$$ $$\dot  E=Población \ expuesta$$
+$$\nu = tasa \ de \ nacimientos$$
+$$\beta1= tasa\ de \ transmisión \ de \ la \ interacción \ SE$$
+$$\beta2= tasa\ de \ transmisión \ de \ la \ interacción \ ET$$
+$$r1= tasa\ de \ recuperación \ de \ la \ interacción \ ET$$
+$$\mu = tasa \ de \ mortalidad$$ $$k =carga \ viral$$
+$$pr2 = fracción \ de  \ la  \ población \ infectada \ que \ pasa \ a \ ser \ expuesto \ sin \ recibir \ tratamiento$$
+$$qr2 = fracción \ de \ la \ población \ que \ pasa \ de \ ser \ infectado \ a \ recibir \ tratamiento$$
+3. ¿Bajo qué condiciones la población se conservaría?
+
+Se conservaría sólo sí:
+
+$$ \nu = \mu $$
+
+4.  Encuentra, si existe, el punto de equilibrio *free-disease*\
+
+```{r}
+
+STEI<- function (tiempo, compartimentos, parametros) {
+  with (as.list (c (compartimentos, parametros)), {
+    dS <- nu -  beta1*((S*I)/N) - mu*S
+    dE <- beta1*((S*I)/N)+beta2*((T*I)/N) - (mu + k + r1)* E + p*r2*I
+    dI <- k*E - (r2 + mu)*I
+    dT <- r1*E+q*r2*I - beta2* ((T*I)/N) - mu*T
+    list (c (dS, dE, dI, dT))
+  })
+}
+
+parametros <- c (mu = 0.005, nu = 0.005, beta1 = 6, beta2 = 5, k = 4, r1= 3, p= 3, r2 = 5, q= 3, N= 13.5^100 ) 
+compartimentos <- c (S = 13451, E = 123 , I = 554, T = 312)
+tiempo <- seq (from = 1, to = 100, by = 0.001)
+
+outSEIAR <- ode (compartimentos, tiempo, STEI, parametros)
+
+matplot (outSEIAR [ , 1], outSEIAR [ , 2:4], type = "l",
+         xlab = "Tiempo", ylab = "Población",
+         main = "Modelo STEI", lwd = 2)
+legend ("topright", c ("Susceptibles", "Tratamiento", "Expuestos", "Infectados"), col = 1:4, lty = 1:4, cex = 0.5)
+```
+
+5.  ¿Qué tipo de enfermedad puede estar describiendo? Justifica tu
+    respuesta.
+
+Viruela, ya que la población que tuvo tratamiento (vacuna) permitió la
+inmunidad de rebaño, por lo que las personas expuestas ya no necesitan
+del tratamiento y los infetados y susceptibles tienden a 0
+
+6.  Selecciona un conjunto de parámetros adecuados y resuelve
+    numéricamente el sistema de ecuaciones diferenciales. Asegurate que
+    tu solución alcance un punto de equilibrio.Discute tu resultado.
+
+Podemos observar la tendencia exponencial en cuanto a personas que
+recibieron el tratamiento y los expuestos, esto se debe a que las
+personas que están expuestas y las que reciben tratamiento tienden a
+adquirir inmunidad. Por lo que las personas susceptibles e infectadas
+tienden a ir a valores de 0.
+
+# Modelo epidemiológico de la CDMX
+
+Considera el modelo que usó la CDMX para moniterear al inicio de la
+pandemia de COVID-19 los casos, los hospitalizados y muertes en dicha
+entidad. El modelo se encuentra
+[acá](https://modelo.covid19.cdmx.gob.mx/modelo-epidemico)
+
+1.  Explica el significado de cada ecuación: es decir, explica el
+    significado de cada término y cada parámetro.
+
+$$\dot S=Población \ susceptible$$ $$\dot E=Población \ expuesta$$
+$$\dot I=Población \ de \ infectados$$
+$$\dot L=Población \ de \ sintomáticos \ leves $$
+$$\dot    G=Población \ sintomáticos \ graves$$
+$$\dot H = Hospitalizados$$
+$$\dot ICU =  Población \ en \ terapia \ intensiva$$
+$$\dot R = Población recuperada$$ $$\dot M = Población \ muerta $$
+$$\eta = carga \ viral$$
+$$Dinfect = Tiempo \ que \ es \ infeccioso \ el \ paciente $$
+$$Dincub = Tiempo \ de \ incubación$$
+$$\rho grave = Tasa \ de \ hospitalización$$
+$$DRL = Tiempo \ de \ recuperación \ de \ casos \ leves$$
+$$DHOSP = Tiempo  \ entre \ presencia \ de \ síntomas \ y \ hospitalización \ en \ casos \ graves \ (días)$$
+$$ \rho ICU = Tasa  \ de  \ UCI $$
+$$DRH = Tiempo \ entre \ hospitalización \ de \ casos \ graves \ no \ UCI \ y \ recuperación \ (días)$$
+$$\rho M = Tasa \ de  \ letalidad \ respecto \ a \ población \ general$$
+$$DICU = Tiempo \ entre \ hospitalización \ de \ casos \  graves \ e \ ingreso \ a \ UCI \ (días)$$
+$$DRICU = Tiempo \ entre \ ingreso \ a \ UCI \ y \ recuperación \ (días)$$
+$$DM = Tiempo \ entre \ ingreso \ a \ UCI \ y \ deceso \ (días) $$
+$$N = Población \ susceptible \ (millones)$$ $$R0 = R0$$
+
+2.  ¿La población se conserva? Sí, ya que: $$S+E+I+L+G+H+ICU+R+M=1$$
+3.  Encuentra, si existe, el punto de equilibrio *free-disease*\
+
+```{r}
+
+COVID <- function (tiempo, compartimentos, parametros) {
+  with (as.list (c (compartimentos, parametros)), {
+    dS <- - (R0/Dinfect)*I*S
+    dE <- (R0/Dinfect)*I*S - (1/Dincub)*E
+    dI <- (1/Dincub)*E - (1/Dinfect)*I
+    dL <- (1-Pgrave)* (1/Dinfect)*I - (1/DRL)*L
+    dG <- Pgrave * (1/Dinfect)*I - (1 /Dhosp)*G
+    dH <- (1 /Dhosp)*G -(1-PICU)* (1/DRH)*H - PICU* (1/DICU)*H
+    dICU <- PICU *(1/DICU)*H - (1-PM)*(1/DRICU)*ICU - PM*(1/DM)*ICU
+    dR <-(1/DRL)*L + (1-PICU)*(1/DRH)*H
+ + (1-PM)*(1/DRICU)*ICU
+    dM <- PM*(1/DM)*ICU
+    list (c (dS, dE, dI, dL, dG, dH, dICU, dR, dM))
+  })
+}
+
+parametros <- c (Dinfect=2.9, Dincub = 5.2, Pgrave = 13.80, DRL=14, Dhosp=4, PICU = 5, DRH =12, PM = 3, DICU =1, DRICU = 7, DM = 8, N = 22, R0 = 2.83)
+compartimentos <- c (S =9209944, E = 0, I = 10, L = 0, G= 0, H = 0, ICU = 0, R= 10, M= 0 )
+tiempo <- seq (from = 1, to = 100, by = 0.001)
+
+outSEIAR <- ode (compartimentos, tiempo, COVID, parametros)
+
+matplot (outSEIAR [ , 1], outSEIAR [ , 2:9], type = "l",
+         xlab = "Tiempo", ylab = "Población",
+         main = "Modelo COVID", lwd = 2)
+legend ("topright", c ("Inmunes", "Expuestos", "Infectados", "Sintomáticos leves", "Sintomáticos graves", "Hospitalizados", "ICU", "Recuperados", "Muertos"), col = 1:9, lty = 1:9, cex = 0.5)
+```
+
+4.  Usa los parámetros de parámetros que sugieren y resuelve
+    numéricamente el sistema de ecuaciones diferenciales. Asegurate que
+    tu solución alcance un punto de equilibrio.Discute tu resultado.
+
+Se llega a un equilibrio, en cuanto a todos los compartimentos, menos en
+el de los expuestos, ya que la mayoría de los susceptibles, en algún
+momento tendrán una exposición que los llevara a uno de los
+comportimentos de descenlace. 5. ¿Qué modificaciones se te ocurren que
+podrían implementarse para mejorar ese modelo?
+
+Haría un modelo por compartimentos de edades, ya que en esta enfermedad
+podemos observar una tendencia a que las tasad de contagio son
+diferentes dependiendo del grupo de edad al que pertenezcas, así mismo
+las infecciones afectan de manera distinta en los diferentes grupos de
+edad.
